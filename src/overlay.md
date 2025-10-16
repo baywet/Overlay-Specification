@@ -268,6 +268,53 @@ actions:
 
 This approach allows inversion of control as to where the Overlay updates apply to the target document itself.
 
+#### Copy example
+
+Copy actions behave similarly to update actions but source the node to from the document being transformed. Copy actions MAY be combined with update or remove actions to perform more advanced transformations like moving or renaming nodes.
+
+```yaml
+openapi: 3.1.0
+info:
+  title: API with a paged collection
+  version: 1.0.0
+paths:
+  /items:
+    get:
+      responses:
+        200:
+          description: OK
+  /some-items:
+    delete:
+      responses:
+        200:
+          description: OK
+```
+
+```yaml
+overlay: 1.1.0
+info:
+  title: Demonstrates variations of "copy" uses
+  version: 1.0.0
+actions:
+  - target: '$.paths["/some-items"]'
+    copy: '$.paths["/items"]'
+    description: 'copies recursively all elements from the "items" path item to the new "some-items" path item without ensuring the node exists before the copy'
+
+  - target: '$.paths'
+    update: { "/other-items": {} }
+  - target: '$.paths["/other-items"]'
+    copy: '$.paths["/items"]'
+    description: 'copies recursively all elements from the "items" path item to the new "other-items" path item while ensuring the node exists before the copy'
+
+  - target: '$.paths'
+    update: { "/new-items": {} }
+  - target: '$.paths["/new-items"]'
+    copy: '$.paths["/items"]'
+  - target: '$.paths["/items"]'
+    remove: true
+    description: 'moves/rename the "items" path item to "new-items"'
+```
+
 ### Specification Extensions
 
 While the Overlay Specification tries to accommodate most use cases, additional data can be added to extend the specification at certain points.
