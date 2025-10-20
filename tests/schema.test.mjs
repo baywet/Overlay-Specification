@@ -37,7 +37,10 @@ const runTestSuite = (version, validateOverlay, suite = "pass") => {
       test(entry.name, () => {
         const instance = parseYamlFromFile(`./tests/v${version}/${suite}/${entry.name}`);
         const output = validateOverlay(instance, BASIC);
-        expect(output.valid).to.equal(suite === "pass");
+        if (suite === "pass")
+          expect(output).to.deep.equal({ valid: true });
+        else
+          expect(output.valid).to.equal(false);
       });
     });
 }
