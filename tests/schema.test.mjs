@@ -1,6 +1,9 @@
 import { readdirSync, readFileSync } from "node:fs";
 import YAML from "yaml";
-import { validate, setMetaSchemaOutputFormat } from "@hyperjump/json-schema/draft-2020-12";
+import {
+  validate,
+  setMetaSchemaOutputFormat,
+} from "@hyperjump/json-schema/draft-2020-12";
 import { BASIC } from "@hyperjump/json-schema/experimental";
 import { describe, test, expect } from "vitest";
 
@@ -9,15 +12,18 @@ import { addMediaTypePlugin } from "@hyperjump/browser";
 import { buildSchemaDocument } from "@hyperjump/json-schema/experimental";
 
 addMediaTypePlugin("application/schema+yaml", {
-    parse: async (response) => {
-      const contentType = contentTypeParser.parse(response.headers.get("content-type") ?? "");
-      const contextDialectId = contentType.parameters.schema ?? contentType.parameters.profile;
-  
-      const foo = YAML.parse(await response.text());
-      return buildSchemaDocument(foo, response.url, contextDialectId);
-    },
-    fileMatcher: (path) => path.endsWith(".yaml")
-  });
+  parse: async (response) => {
+    const contentType = contentTypeParser.parse(
+      response.headers.get("content-type") ?? "",
+    );
+    const contextDialectId =
+      contentType.parameters.schema ?? contentType.parameters.profile;
+
+    const foo = YAML.parse(await response.text());
+    return buildSchemaDocument(foo, response.url, contextDialectId);
+  },
+  fileMatcher: (path) => path.endsWith(".yaml"),
+});
 
 const parseYamlFromFile = (filePath) => {
   const schemaYaml = readFileSync(filePath, "utf8");
@@ -29,7 +35,13 @@ setMetaSchemaOutputFormat(BASIC);
 const versions = ["1.0", "1.1"];
 
 describe.each(versions)("v%s", async (version) => {
-  const validateOverlay = await validate(`./schemas/v${version}/schema.yaml`);
+  let validateOverlay;
+  try {
+    validateOverlay = await validate(`./schemas/v${version}/schema.yaml`);
+  } catch (error) {
+    console.error(error.output);
+    process.exit(1);
+  }
   describe("Pass", () => {
     readdirSync(`./tests/v${version}/pass`, { withFileTypes: true })
       .filter((entry) => entry.isFile() && /\.yaml$/.test(entry.name))
@@ -37,7 +49,7 @@ describe.each(versions)("v%s", async (version) => {
         test(entry.name, () => {
           const instance = parseYamlFromFile(`./tests/v${version}/pass/${entry.name}`);
           const output = validateOverlay(instance, BASIC);
-          expect(output.valid).to.equal(true);
+          expect(output).to.deep.equal({ valid: true });
         });
       });
   });
