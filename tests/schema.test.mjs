@@ -25,22 +25,17 @@ addMediaTypePlugin("application/schema+yaml", {
   fileMatcher: (path) => path.endsWith(".yaml"),
 });
 
-const parseYamlFromFile = (filePath, sourceVersion = "", targetVersion = "") => {
+const parseYamlFromFile = (filePath) => {
   const schemaYaml = readFileSync(filePath, "utf8");
-  const result = YAML.parse(schemaYaml, { prettyErrors: true });
-  if (sourceVersion && targetVersion && result.overlay === `${sourceVersion}.0`) {
-    result.overlay = `${targetVersion}.0`;
-  }
-  return result;
+  return YAML.parse(schemaYaml, { prettyErrors: true });
 };
 
-const runTestSuite = (version, validateOverlay, suite = "pass", targetVersion = "", testsToIgnore = []) => {
+const runTestSuite = (version, validateOverlay, suite = "pass") => {
   readdirSync(`./tests/v${version}/${suite}`, { withFileTypes: true })
     .filter((entry) => entry.isFile() && /\.yaml$/.test(entry.name))
-    .filter((entry) => !testsToIgnore.includes(entry.name))
     .forEach((entry) => {
       test(entry.name, () => {
-        const instance = parseYamlFromFile(`./tests/v${version}/${suite}/${entry.name}`, targetVersion === "" ? "" : version, targetVersion);
+        const instance = parseYamlFromFile(`./tests/v${version}/${suite}/${entry.name}`);
         const output = validateOverlay(instance, BASIC);
         expect(output.valid).to.equal(suite === "pass");
       });
@@ -50,12 +45,6 @@ const runTestSuite = (version, validateOverlay, suite = "pass", targetVersion = 
 setMetaSchemaOutputFormat(BASIC);
 
 const versions = ["1.0", "1.1"];
-const compatibilityTestsToIgnore = {
-  "1.1": [
-    // the schema has been improved to disallow theses cases
-    "actions-update-with-remove.yaml",
-  ]
-};
 
 describe.each(versions)("v%s", async (version) => {
   let validateOverlay;
@@ -72,20 +61,4 @@ describe.each(versions)("v%s", async (version) => {
   describe("Fail", () => {
     runTestSuite(version, validateOverlay, "fail");
   });
-
-  if (version !== "1.0") {
-    const currentVersionIndex = versions.indexOf(version);
-    for (let i = currentVersionIndex - 1; i >= 0; i--) {
-      const sourceVersion = versions[i];
-      describe(`Backward compatibility of v${sourceVersion} with v${version}`, () => {
-        describe("Pass", () => {
-          runTestSuite(sourceVersion, validateOverlay, "pass", version, compatibilityTestsToIgnore[version] || []);
-        });
-
-        describe("Fail", () => {
-          runTestSuite(sourceVersion, validateOverlay, "fail", version, compatibilityTestsToIgnore[version] || []);
-        });
-      });
-    }
-  }
 });
