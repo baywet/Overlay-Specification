@@ -270,7 +270,7 @@ This approach allows inversion of control as to where the Overlay updates apply 
 
 #### Copy example
 
-Copy actions behave similarly to update actions but source the node to from the document being transformed. Copy actions MAY be combined with update or remove actions to perform more advanced transformations like moving or renaming nodes.
+Copy actions behave similarly to update actions but source the node to from the document being transformed. Copy actions MAY be used in sequence with update or remove actions to perform more advanced transformations like moving or renaming nodes.
 
 ##### Simple copy
 
