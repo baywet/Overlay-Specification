@@ -272,6 +272,12 @@ This approach allows inversion of control as to where the Overlay updates apply 
 
 Copy actions behave similarly to update actions but source the node to from the document being transformed. Copy actions MAY be combined with update or remove actions to perform more advanced transformations like moving or renaming nodes.
 
+##### Simple copy
+
+The following example demonstrates how the operations from the "items" path item are copied to the "some-items" path item.
+
+###### Source description
+
 ```yaml
 openapi: 3.1.0
 info:
@@ -290,6 +296,8 @@ paths:
           description: OK
 ```
 
+###### Overlay
+
 ```yaml
 overlay: 1.1.0
 info:
@@ -299,13 +307,133 @@ actions:
   - target: '$.paths["/some-items"]'
     copy: '$.paths["/items"]'
     description: 'copies recursively all elements from the "items" path item to the new "some-items" path item without ensuring the node exists before the copy'
+```
 
+###### Result description
+
+```yaml
+openapi: 3.1.0
+info:
+  title: API with a paged collection
+  version: 1.0.0
+paths:
+  /items:
+    get:
+      responses:
+        200:
+          description: OK
+  /some-items:
+    get:
+      responses:
+        200:
+          description: OK
+    delete:
+      responses:
+        200:
+          description: OK
+```
+
+##### Ensure the target exists and copy
+
+The following example demonstrates how the operations from the "items" path item are copied to the "other-items" path item, while ensuring the "other-items" path item exists first by using an update action.
+
+###### Source description
+
+```yaml
+openapi: 3.1.0
+info:
+  title: API with a paged collection
+  version: 1.0.0
+paths:
+  /items:
+    get:
+      responses:
+        200:
+          description: OK
+  /some-items:
+    delete:
+      responses:
+        200:
+          description: OK
+```
+
+###### Overlay
+
+```yaml
+overlay: 1.1.0
+info:
+  title: Demonstrates variations of "copy" uses
+  version: 1.0.0
+actions:
   - target: '$.paths'
     update: { "/other-items": {} }
   - target: '$.paths["/other-items"]'
     copy: '$.paths["/items"]'
     description: 'copies recursively all elements from the "items" path item to the new "other-items" path item while ensuring the node exists before the copy'
+```
 
+###### Result description
+
+```yaml
+openapi: 3.1.0
+info:
+  title: API with a paged collection
+  version: 1.0.0
+paths:
+  /items:
+    get:
+      responses:
+        200:
+          description: OK
+  /other-items:
+    get:
+      responses:
+        200:
+          description: OK
+  /some-items:
+    delete:
+      responses:
+        200:
+          description: OK
+```
+
+##### Move example
+
+The following example demonstrates how the "items" path item is renamed as "new-items" through a combination of actions:
+
+1. An update action to ensure the target exists.
+1. A copy action to copy the source path item object to the target.
+1. A remove action to remove the source path item.
+
+
+###### Source description
+
+```yaml
+openapi: 3.1.0
+info:
+  title: API with a paged collection
+  version: 1.0.0
+paths:
+  /items:
+    get:
+      responses:
+        200:
+          description: OK
+  /some-items:
+    delete:
+      responses:
+        200:
+          description: OK
+```
+
+###### Overlay
+
+```yaml
+overlay: 1.1.0
+info:
+  title: Demonstrates variations of "copy" uses
+  version: 1.0.0
+actions:
   - target: '$.paths'
     update: { "/new-items": {} }
   - target: '$.paths["/new-items"]'
@@ -313,6 +441,26 @@ actions:
   - target: '$.paths["/items"]'
     remove: true
     description: 'moves/rename the "items" path item to "new-items"'
+```
+
+###### Result description
+
+```yaml
+openapi: 3.1.0
+info:
+  title: API with a paged collection
+  version: 1.0.0
+paths:
+  /new-items:
+    get:
+      responses:
+        200:
+          description: OK
+  /some-items:
+    delete:
+      responses:
+        200:
+          description: OK
 ```
 
 ### Specification Extensions
