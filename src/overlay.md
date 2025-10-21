@@ -149,10 +149,10 @@ The extensions may or may not be supported by the available tooling, but those m
 | Use Case                                                                      | Description                                                                     |
 |-------------------------------------------------------------------------------|---------------------------------------------------------------------------------|
 | <a href="#example-update">Update</a> objects                                  | Section for how to **update** objects.                                          |
-| * <a name="example-structured-update">Structured</a> update                   | Example of how to update an object by **mirroring** target document **structure**. |
-| * <a name="example-targeted-updates">Targeted</a> updates                     | Example of how to perform a **targeted update**.                                |
-| * <a name="example-multiple-updates">Multiple target</a> updates              | Example of how to **update multiple** target objects.                           |
-| * Update objects given a <a name="example-labeled-updates">label</a>          | Example of how to apply **updates** to **labeled** targets using `x-oai-traits`. |
+| * <a href="#example-structured-update">Structured</a> update                   | Example of how to update an object by **mirroring** target document **structure**. |
+| * <a href="#example-targeted-updates">Targeted</a> updates                     | Example of how to perform a **targeted update**.                                |
+| * <a href="#example-multiple-updates">Multiple target</a> updates              | Example of how to **update multiple** target objects.                           |
+| * Update objects given a <a href="#example-labeled-updates">label</a>          | Example of how to apply **updates** to **labeled** targets using `x-oai-traits`. |
 | <a href="#example-copy">Copy</a> objects                                      | Section for how to **copy** objects.                                            |
 | * <a href="#example-simple-copy">Simple copy</a> of an object                 | Example of how to do a **simple copy** of an object.                            |
 | * <a href="#example-verified-target-copy">Verified target copy</a> of an object | Example of how to **copy** an object to a **verified target**.                  |
