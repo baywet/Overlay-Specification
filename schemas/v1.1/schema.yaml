@@ -43,29 +43,19 @@ $defs:
         pattern: ^\$
       description:
         type: string
-    oneOf:
-      - properties:
-          update:
-            type:
-              - string
-              - boolean
-              - object
-              - array
-              - number
-              - "null"
-        required:
-          - update
-      - properties:
-          copy:
-            type: string
-        required:
-          - copy
-      - properties:
-          remove:
-            type: boolean
-            default: false
-        required:
-          - remove
+      update:
+        type:
+          - string
+          - boolean
+          - object
+          - array
+          - number
+          - "null"
+      copy:
+        type: string
+      remove:
+        type: boolean
+        default: false
     required:
       - target
     $ref: "#/$defs/specification-extensions"
