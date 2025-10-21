@@ -21,7 +21,7 @@ The main purpose of the Overlay Specification is to provide a way to repeatably 
 
 ### Overlay
 
-An Overlay is a JSON or YAML structure containing an ordered list of [Action Objects](#overlay-actions) that are to be applied to the target document. Each [Action Object](#action-object) has a `target` property and a modifier type (`update` or `remove`). The `target` property is a [[RFC9535|JSONPath]] query expression that identifies the elements of the target document to be updated and the modifier determines the change.
+An Overlay is a JSON or YAML structure containing an ordered list of [Action Objects](#action-object) that are to be applied to the target document. Each Action Object has a `target` property and a modifier type (`update` or `remove`). The `target` property is a [[RFC9535|JSONPath]] query expression that identifies the elements of the target document to be updated and the modifier determines the change.
 
 ## Specification
 
@@ -105,6 +105,7 @@ The metadata MAY be used by the clients if needed.
 
 This object MAY be extended with [Specification Extensions](#specification-extensions).
 
+<a name="action-object"></a>
 #### Action Object
 
 This object represents one or more changes to be applied to the target document at the location defined by the target JSONPath expression.
@@ -131,9 +132,46 @@ The properties of the resolved `copy` object MUST be compatible with the target 
 
 This object MAY be extended with [Specification Extensions](#specification-extensions).
 
-### Examples
+### Specification Extensions
 
-#### Structured Overlay Example
+While the Overlay Specification tries to accommodate most use cases, additional data can be added to extend the specification at certain points.
+
+The extension properties are implemented as patterned fields that are always prefixed by `"x-"`.
+
+| Field Pattern | Type | Description |
+| ---- | :--: | ---- |
+| <a name="overlay-extensions"></a>^x- | Any | Allows extensions to the Overlay Specification. The field name MUST begin with `x-`, for example, `x-internal-id`. Field names beginning `x-oai-` and `x-oas-` are reserved for uses defined by the [OpenAPI Initiative](https://www.openapis.org/). The value MAY be `null`, a primitive, an array or an object. |
+
+The extensions may or may not be supported by the available tooling, but those may be extended as well to add requested support (if tools are internal or open-sourced).
+
+## Examples
+
+| Use Case                                                                      | Description                                                                     |
+|-------------------------------------------------------------------------------|---------------------------------------------------------------------------------|
+| <a href="#example-update">Update</a> objects                                  | Section for how to **update** objects.                                          |
+| * <a name="example-structured-update">Structured</a> update                   | Example of how to update an object by **mirroring** target document **structure**. |
+| * <a name="example-targeted-updates">Targeted</a> updates                     | Example of how to perform a **targeted update**.                                |
+| * <a name="example-multiple-updates">Multiple target</a> updates              | Example of how to **update multiple** target objects.                           |
+| * Update objects given a <a name="example-labeled-updates">label</a>          | Example of how to apply **updates** to **labeled** targets using `x-oai-traits`. |
+| <a href="#example-copy">Copy</a> objects                                      | Section for how to **copy** objects.                                            |
+| * <a href="#example-simple-copy">Simple copy</a> of an object                 | Example of how to do a **simple copy** of an object.                            |
+| * <a href="#example-verified-target-copy">Verified target copy</a> of an object | Example of how to **copy** an object to a **verified target**.                  |
+| <a href="#example-move">Move</a> objects                                      | Section for how to **move** objects.                                            |
+| * <a href="#example-move-simple">Simple move</a> of an object                 | Example of how to **move** an object.                                           |
+| Modify <a href="#example-array">array</a> objects                        | Section for how to **modify array** objects.                                    |
+| * <a href="#example-array-add-element">Add</a> an array element               | Example of how to **add** an **array element**.                                 |
+| * <a href="#example-array-remove-element">Remove</a> an array element         | Example of how to **remove** an **array element**.                              |
+| * <a href="#example-array-move-element">Move</a> an array element             | Example of how to **move** an **array element**.                                |
+| * <a href="#example-array-replace-element">Replace</a> an array element       | Example of how to **replace** an **array element**.                             |
+
+**Note:** All examples in this section are non-normative and are provided solely to illustrate the behavior defined in the preceding normative sections.
+
+
+### Update Examples
+The following examples show different ways to apply `update` actions to modify target documents.
+
+<a name="example-structured-update"></a>
+#### Structured Update 
 
 When updating properties throughout the target document it may be more efficient to create a single `Action Object` that mirrors the structure of the target document. e.g.
 
@@ -161,7 +199,8 @@ actions:
       tags:
 ```
 
-#### Targeted Overlay Example
+<a name="example-targeted-updates"></a>
+#### Targeted Updates 
 
 Alternatively, where only a small number of updates need to be applied to a large document, each [Action Object](#action-object) MAY be more targeted.
 
@@ -171,22 +210,23 @@ info:
   title: Targeted Overlay
   version: 1.0.0
 actions:
-  - target: $.paths['/foo'].get
+  - target: '$.paths["/foo"].get'
     update:
       description: This is the new description
-  - target: $.paths['/bar'].get
+  - target: '$.paths["/bar"].get'
     update:
       description: This is the updated description
-  - target: $.paths['/bar']
+  - target: '$.paths["/bar"]'
     update:
       post:
         description: This is an updated description of a child object
         x-safe: false
 ```
 
-#### Wildcard Overlay Example
+<a name="example-multiple-updates"></a>
+#### Multiple Target Updates
 
-One significant advantage of using the JSONPath syntax is that it allows referencing multiple nodes in the target document. This would allow a single update object to be applied to multiple target objects using wildcards and other multi-value selectors.
+One significant advantage of using the JSONPath syntax is that it allows referencing multiple nodes in the target document. This would allow a single update object to be applied to multiple target objects using **wildcards** ( `*`) and other multi-value selectors.
 
 ```yaml
 overlay: 1.0.0
@@ -194,44 +234,21 @@ info:
   title: Update many objects at once
   version: 1.0.0
 actions:
-  - target: $.paths.*.get
+  - target: '$.paths.*.get'
     update:
       x-safe: true
-  - target: $.paths.*.get.parameters[?@.name=='filter' && @.in=='query']
+  - target: '$.paths.*.get.parameters[?@.name=="filter" && @.in=="query"]'
     update:
       schema:
         $ref: '#/components/schemas/filterSchema'
 ```
 
-#### Array Modification Examples
+<a name="example-labeled-updates"></a>
+#### Labeled *(Trait)* Updates
 
-Array elements MAY be deleted using the `remove` property. Use of array indexes to remove array items should be avoided where possible as indexes will change when items are removed.
+This example shows how to apply overlay updates to **labeled** targets using `x-oai-traits`. This technique allows authors to define **named update points** within a target document so overlays can apply reusable updates declaratively, rather than hard-coding document paths.
 
-```yaml
-overlay: 1.0.0
-info:
-  title: Add an array element
-  version: 1.0.0
-actions:
-  - target: $.paths.*.get.parameters
-    update:
-      name: newParam
-      in: query
-```
-
-```yaml
-overlay: 1.0.0
-info:
-  title: Remove a array element
-  version: 1.0.0
-actions:
-  - target: $.paths.*.get.parameters[?@.name == 'dummy']
-    remove: true
-```
-
-#### Traits Example
-
-By annotating a target document (such as an [[OpenAPI]] document) using [Specification Extensions](#specification-extensions) such as `x-oai-traits`, the author of the target document MAY identify where overlay updates should be applied.
+By annotating a target document (such as an [[OpenAPI]] document) using [Specification Extensions](#specification-extensions) such as `x-oai-traits`, the author of the target document can identify where overlay updates SHOULD be applied.
 
 ```yaml
 openapi: 3.1.0
@@ -247,15 +264,16 @@ paths:
           description: OK
 ```
 
-With the above OpenAPI document, the following Overlay document will apply the necessary updates to describe how paging is implemented, where that trait has been applied.
+In this example, the `x-oai-traits` extension labels the `GET /items` operation as **paged**.
+Using this approach, authors MAY apply shared pagination updates to every operation in the target document that defines the label.
 
 ```yaml
 overlay: 1.0.0
 info:
-  title: Apply Traits
+  title: Apply labeled updates using traits
   version: 1.0.0
 actions:
-  - target: $.paths.*.get[?@.x-oai-traits.paged]
+  - target: '$.paths.*.get[?(@.x-oai-traits && @.x-oai-traits[?(@ == "paged")])]'
     update:
       parameters:
         - name: top
@@ -266,17 +284,19 @@ actions:
           # ...
 ```
 
-This approach allows inversion of control as to where the Overlay updates apply to the target document itself.
+This approach inverts control: the **target document** declares where updates SHOULD apply, while the **overlay** defines reusable logic that can be shared across multiple API specifications.
 
-#### Copy example
+<a name="example-copy"></a>
+### Copy Examples
 
-Copy actions behave similarly to update actions but source the node to from the document being transformed. Copy actions MAY be used in sequence with update or remove actions to perform more advanced transformations like moving or renaming nodes.
+Copy actions behave similarly to `update` actions but source the node from the document being transformed. Copy `actions` MAY be used in sequence with `update` or `remove` actions to perform more advanced transformations like moving or renaming nodes.
 
-##### Simple copy
+<a name="example-simple-copy"></a>
+#### Simple Copy
 
-The following example demonstrates how the operations from the "items" path item are copied to the "some-items" path item.
+This example shows how to copy all operations from the `items` path item to the "some-items" path item.
 
-###### Source description
+#### Source description
 
 ```yaml
 openapi: 3.1.0
@@ -296,7 +316,7 @@ paths:
           description: OK
 ```
 
-###### Overlay
+#### Overlay
 
 ```yaml
 overlay: 1.1.0
@@ -309,7 +329,7 @@ actions:
     description: 'copies recursively all elements from the "items" path item to the new "some-items" path item without ensuring the node exists before the copy'
 ```
 
-###### Result description
+#### Result description
 
 ```yaml
 openapi: 3.1.0
@@ -333,11 +353,12 @@ paths:
           description: OK
 ```
 
-##### Ensure the target exists and copy
+<a name="example-verified-target-copy"></a>
+#### Verified Target Copy
 
-The following example demonstrates how the operations from the "items" path item are copied to the "other-items" path item, while ensuring the "other-items" path item exists first by using an update action.
+This example shows how to copy all operations from the `items` path item to the `other-items` path item after first ensuring the target exists with an update action.
 
-###### Source description
+#### Source description
 
 ```yaml
 openapi: 3.1.0
@@ -357,7 +378,7 @@ paths:
           description: OK
 ```
 
-###### Overlay
+#### Overlay
 
 ```yaml
 overlay: 1.1.0
@@ -372,7 +393,7 @@ actions:
     description: 'copies recursively all elements from the "items" path item to the new "other-items" path item while ensuring the node exists before the copy'
 ```
 
-###### Result description
+#### Result description
 
 ```yaml
 openapi: 3.1.0
@@ -397,16 +418,21 @@ paths:
           description: OK
 ```
 
-##### Move example
+<a name="example-move"></a>
+### Move Examples
 
-The following example demonstrates how the "items" path item is renamed as "new-items" through a combination of actions:
+A **move** operation works like a _rename_, using a sequence of actions — `update`, `copy`, then `remove` — to shift a value to a new location in the target document.
 
-1. An update action to ensure the target exists.
-1. A copy action to copy the source path item object to the target.
-1. A remove action to remove the source path item.
+<a name="example-move-simple"></a>
+#### Simple Move
 
+This example shows how to rename the `items` path item to `new-items` using a sequence of overlay actions:
 
-###### Source description
+1. Use an `update` action to ensure the target path item exists.
+2. Use a `copy` action to copy the source path item to the target.
+3. Use a `remove` action to delete the original source path item.
+
+#### Source description
 
 ```yaml
 openapi: 3.1.0
@@ -426,7 +452,7 @@ paths:
           description: OK
 ```
 
-###### Overlay
+#### Overlay
 
 ```yaml
 overlay: 1.1.0
@@ -440,10 +466,10 @@ actions:
     copy: '$.paths["/items"]'
   - target: '$.paths["/items"]'
     remove: true
-    description: 'moves/rename the "items" path item to "new-items"'
+    description: 'moves (renames) the "items" path item to "new-items"'
 ```
 
-###### Result description
+#### Result description
 
 ```yaml
 openapi: 3.1.0
@@ -463,24 +489,158 @@ paths:
           description: OK
 ```
 
-### Specification Extensions
+<a name="example-array"></a>
+### Array Examples
 
-While the Overlay Specification tries to accommodate most use cases, additional data can be added to extend the specification at certain points.
+These examples demonstrate how to modify array-valued fields using Overlay actions — specifically how to **add**, **remove**, **move**, and **replace** elements within arrays in the target document.
 
-The extension properties are implemented as patterned fields that are always prefixed by `"x-"`.
+<a name="example-array-add-element"></a>
+#### Add Array Element
 
-| Field Pattern | Type | Description |
-| ---- | :--: | ---- |
-| <a name="overlay-extensions"></a>^x- | Any | Allows extensions to the Overlay Specification. The field name MUST begin with `x-`, for example, `x-internal-id`. Field names beginning `x-oai-` and `x-oas-` are reserved for uses defined by the [OpenAPI Initiative](https://www.openapis.org/). The value MAY be `null`, a primitive, an array or an object. |
+Array elements MAY be added using the `update` property.
 
-The extensions may or may not be supported by the available tooling, but those may be extended as well to add requested support (if tools are internal or open-sourced).
+```yaml
+overlay: 1.0.0
+info:
+  title: Add an array element
+  version: 1.0.0
+actions:
+  - target: '$.paths.*.get.parameters'
+    update:
+      name: newParam
+      in: query
+```
 
-### File Naming Convention
+<a name="example-array-remove-element"></a>
+#### Remove Array Element
 
-Overlay files MAY choose to follow the convention of a `purpose.overlay.yaml` file naming pattern.
-Other file naming conventions are also supported.
+Array elements MAY be deleted using the `remove` property. Use of array indexes to remove array items SHOULD be avoided where possible, as indexes will change when items are removed.
 
-## Appendix A: Revision History
+```yaml
+overlay: 1.0.0
+info:
+  title: Remove an array element
+  version: 1.0.0
+actions:
+  - target: '$.paths.*.get.parameters[?@.name == "dummy"]'
+    remove:
+```
+
+<a name="example-array-move-element"></a>
+#### Move Array Element
+
+Array elements MAY be moved by combining `update`, `copy`, and `remove` actions.
+
+A **move** operation works like a _rename_, using these actions in sequence — `update`, `copy`, then `remove` — to shift a value to a new location in the target document.
+
+1. Use an `update` action to ensure the target array exists.
+2. Use a `copy` action to copy the selected array element to the new target array.
+3. Use a `remove` action to delete the original array element.
+
+```yaml
+overlay: 1.0.0
+info:
+  title: Move an array element
+  version: 1.0.0
+actions:
+  # Ensure the target array exists
+  - target: '$.paths["/new-items"].get.parameters'
+    update: []
+
+  # Copy matching parameter objects from one path item to another
+  - target: '$.paths["/new-items"].get.parameters'
+    copy: '$.paths["/items"].get.parameters[?@.name == "oldParam"]'
+
+  # Remove the parameter object from the original array
+  - target: '$.paths["/items"].get.parameters[?@.name == "oldParam"]'
+    remove: true
+```
+
+<a name="example-array-replace-element"></a>
+#### Replace Array Element
+
+Array elements MAY be replaced by selecting one or more matching elements and applying an `update` action to modify their properties. This is only applicable to arrays of objects—primitive-valued arrays can only be replaced in their entirety.
+
+```yaml
+overlay: 1.0.0
+info:
+  title: Replace an array element
+  version: 1.0.0
+actions:
+  - target: '$.paths.*.get.parameters[?@.name == "limit"]'
+    update:
+      description: The maximum number of items to return per page.
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 100
+```
+
+#### Source description
+
+```yaml
+openapi: 3.1.0
+info:
+  title: API with a paged collection
+  version: 1.0.0
+paths:
+  /items:
+    get:
+      responses:
+        200:
+          description: OK
+  /some-items:
+    delete:
+      responses:
+        200:
+          description: OK
+```
+
+#### Overlay
+
+```yaml
+overlay: 1.1.0
+info:
+  title: Demonstrates variations of "copy" uses
+  version: 1.0.0
+actions:
+  - target: '$.paths'
+    update: { "/new-items": {} }
+  - target: '$.paths["/new-items"]'
+    copy: '$.paths["/items"]'
+  - target: '$.paths["/items"]'
+    remove: true
+    description: 'moves (renames) the "items" path item to "new-items"'
+```
+
+#### Result description
+
+```yaml
+openapi: 3.1.0
+info:
+  title: API with a paged collection
+  version: 1.0.0
+paths:
+  /new-items:
+    get:
+      responses:
+        200:
+          description: OK
+  /some-items:
+    delete:
+      responses:
+        200:
+          description: OK
+```
+
+
+## Appendix A: File Naming Convention
+
+Overlay files MAY choose to follow the convention of a `purpose.overlay.yaml` file naming pattern. Other file naming conventions are also supported.
+
+**Note:** This section is informative. The use of the purpose.overlay.yaml pattern is optional and does not affect conformance.
+
+## Appendix B: Revision History
 
 | Version | Date | Notes |
 | ---- | ---- | ---- |
