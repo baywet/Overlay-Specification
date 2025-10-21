@@ -167,6 +167,7 @@ The extensions may or may not be supported by the available tooling, but those m
 **Note:** All examples in this section are non-normative and are provided solely to illustrate the behavior defined in the preceding normative sections.
 
 
+<a name="example-update"></a>
 ### Update Examples
 The following examples show different ways to apply `update` actions to modify target documents.
 
