@@ -21,7 +21,7 @@ The main purpose of the Overlay Specification is to provide a way to repeatably 
 
 ### Overlay
 
-An Overlay is a JSON or YAML structure containing an ordered list of [Action Objects](#overlay-actions) that are to be applied to the target document. Each [Action Object](#action-object) has a `target` property and a modifier type (`update` or `remove`). The `target` property is a [[RFC9535|JSONPath]] query expression that identifies the elements of the target document to be updated and the modifier determines the change.
+An Overlay is a JSON or YAML structure containing an ordered list of [Action Objects](#overlay-actions) that are to be applied to the target document. Each [Action Object](#action-object) has a `target` property and a modifier type (`update`, `remove` or `copy`). The `target` property is a [[RFC9535|JSONPath]] query expression that identifies the elements of the target document to be updated and the modifier determines the change.
 
 ## Specification
 
@@ -270,11 +270,11 @@ This approach allows inversion of control as to where the Overlay updates apply 
 
 #### Copy example
 
-Copy actions behave similarly to update actions but source the node to from the document being transformed. Copy actions MAY be used in sequence with update or remove actions to perform more advanced transformations like moving or renaming nodes.
+Copy actions behave similarly to `update` actions but source the node to from the document being transformed. Copy `actions` MAY be used in sequence with `update` or `remove` actions to perform more advanced transformations like moving or renaming nodes.
 
 ##### Simple copy
 
-The following example demonstrates how the operations from the "items" path item are copied to the "some-items" path item.
+This example shows how to copy all operations from the `items` path item to the `some-items` path item.
 
 ###### Source description
 
@@ -335,7 +335,7 @@ paths:
 
 ##### Ensure the target exists and copy
 
-The following example demonstrates how the operations from the "items" path item are copied to the "other-items" path item, while ensuring the "other-items" path item exists first by using an update action.
+This example shows how to copy all operations from the `items` path item to the `other-items` path item after first ensuring the target exists with an update action.
 
 ###### Source description
 
@@ -399,12 +399,11 @@ paths:
 
 ##### Move example
 
-The following example demonstrates how the "items" path item is renamed as "new-items" through a combination of actions:
+This example shows how to rename the `items` path item to `new-items` using a sequence of overlay actions:
 
-1. An update action to ensure the target exists.
-1. A copy action to copy the source path item object to the target.
-1. A remove action to remove the source path item.
-
+1. Use an `update` action to ensure the target path item exists.
+2. Use a `copy` action to copy the source path item to the target.
+3. Use a `remove` action to delete the original source path item.
 
 ###### Source description
 
@@ -440,7 +439,7 @@ actions:
     copy: '$.paths["/items"]'
   - target: '$.paths["/items"]'
     remove: true
-    description: 'moves/rename the "items" path item to "new-items"'
+    description: 'moves (renames) the "items" path item to "new-items"'
 ```
 
 ###### Result description
